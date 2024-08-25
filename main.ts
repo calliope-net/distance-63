@@ -23,7 +23,7 @@ input.onButtonEvent(Button.AB, input.buttonEventClick(), function () {
 })
 input.onButtonEvent(Button.B, input.buttonEventClick(), function () {
     o4digit.clear()
-    o4digit.bit(vl53l4cd.getInterruptPolarity(), 3)
+    o4digit.bit(0, 3)
     o4digit.bit(vl53l4cd.rdByte(vl53l4cd.eRegister.GPIO__TIO_HV_STATUS), 1)
 })
 let distance = 0

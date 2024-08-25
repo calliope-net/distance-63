@@ -45,7 +45,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     //% block="Abstand (cm) mit checkForDataReady" weight=8
     export function readAbstandR() {
         startRanging()
-        while (checkForDataReady() == 0) {
+        while (!checkForDataReady()) {// (checkForDataReady() == 0) {
             delay(1) // ms
         }
         let distance = getDistance() //Get the result of the measurement from the sensor
@@ -121,10 +121,10 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
         //We need to wait at least the default intermeasurement period of 103ms before dataready will occur
         //But if a unit has already been powered and polling, it may happen much faster
 
-        let dataReady = 0, timeout = 0
+        let timeout = 0 //, dataReady = 0
 
-        while (dataReady == 0) {
-            dataReady = checkForDataReady() //  status = VL53L1X_CheckForDataReady(& dataReady);
+        while (!checkForDataReady()) {// (dataReady == 0) {
+            // dataReady = checkForDataReady() //  status = VL53L1X_CheckForDataReady(& dataReady);
             if (timeout++ > 150)
                 return VL53L1_ERROR_TIME_OUT
             delay(1);
@@ -133,6 +133,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
         stopRanging();
         wrByte(eRegister.VL53L1_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, 0x09); // two bounds VHV
         wrByte(0x0B, 0)	// start VHV from the previous temperature
+
         return 0 //status;
     }
 
@@ -157,6 +158,12 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     export function getInterruptPolarity() {
         // This function returns the current interrupt polarity
         // * 1 = active high (**default**) * 0 = active low
+        return ((rdByte(eRegister.GPIO_HV_MUX__CTRL) & 0x10) == 0x10) ? 0 : 1
+    }
+
+    /* export function getInterruptPolarity_() {
+        // This function returns the current interrupt polarity
+        // * 1 = active high (**default**) * 0 = active low
         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
         // temp = temp & 0x10
         // return ~(temp >> 4)
@@ -166,7 +173,9 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
             return 0 // * 0 = active low
         else
             return 1 // bit 4 to 0 * 1 = active high (**default**)
-    }
+    } */
+
+
 
     //% group="VL53L1X"
     //% block="StartRanging (ClearInterrupt + Start 0x40)" weight=5
@@ -192,6 +201,13 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     //% block="CheckForDataReady (0 ist ready)" weight=2
     export function checkForDataReady() {
         // This function checks if the new ranging data is available by polling the dedicated register.
+        // return isDataReady:	* 0 -> not ready
+        // * 1 -> ready
+        return (rdByte(eRegister.GPIO__TIO_HV_STATUS) & 1) == getInterruptPolarity()
+    }
+
+    /* export function checkForDataReady_() {
+        // This function checks if the new ranging data is available by polling the dedicated register.
         // return isDataReady:	* 0 -> not ready * 1 -> ready
         let IntPol = getInterruptPolarity()
         let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS) // 0x03
@@ -201,7 +217,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
             return 1 // 1 -> ready
         else
             return 0 // 0 -> not ready
-    }
+    } */
 
 
 
@@ -273,7 +289,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     }
 
     /*
-    
+     
     #define SOFT_RESET											0x0000
     #define VL53L1_I2C_SLAVE__DEVICE_ADDRESS					0x0001
     #define VL53L1_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND        0x0008
@@ -283,7 +299,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     #define ALGO__PART_TO_PART_RANGE_OFFSET_MM					0x001E
     #define MM_CONFIG__INNER_OFFSET_MM							0x0020
     #define MM_CONFIG__OUTER_OFFSET_MM 							0x0022
-    
+     
     #define GPIO_HV_MUX__CTRL									0x0030
     #define GPIO__TIO_HV_STATUS       							0x0031
     #define SYSTEM__INTERRUPT_CONFIG_GPIO 						0x0046
@@ -307,7 +323,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     #define VL53L1_SYSTEM__GROUPED_PARAMETER_HOLD 				0x0082
     #define SYSTEM__INTERRUPT_CLEAR       						0x0086
     #define SYSTEM__MODE_START                 					0x0087
-
+    
     #define VL53L1_RESULT__RANGE_STATUS							0x0089
     #define VL53L1_RESULT__DSS_ACTUAL_EFFECTIVE_SPADS_SD0		0x008C
     #define RESULT__AMBIENT_COUNT_RATE_MCPS_SD					0x0090
@@ -317,9 +333,9 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     #define VL53L1_FIRMWARE__SYSTEM_STATUS                      0x00E5
     #define VL53L1_IDENTIFICATION__MODEL_ID                     0x010F
     #define VL53L1_ROI_CONFIG__MODE_ROI_CENTRE_SPAD				0x013E
-    
+     
     #define VL53L1X_DEFAULT_DEVICE_ADDRESS						0x52
-    
+     
     */
 
     function vL51L1X_DEFAULT_CONFIGURATION(): Buffer {
