@@ -158,6 +158,7 @@ namespace vl53l4cd { // VL53L4CD.ts
     #define ALGO__PART_TO_PART_RANGE_OFFSET_MM					0x001E
     #define MM_CONFIG__INNER_OFFSET_MM							0x0020
     #define MM_CONFIG__OUTER_OFFSET_MM 							0x0022
+    
     #define GPIO_HV_MUX__CTRL									0x0030
     #define GPIO__TIO_HV_STATUS       							0x0031
     #define SYSTEM__INTERRUPT_CONFIG_GPIO 						0x0046
@@ -181,6 +182,7 @@ namespace vl53l4cd { // VL53L4CD.ts
     #define VL53L1_SYSTEM__GROUPED_PARAMETER_HOLD 				0x0082
     #define SYSTEM__INTERRUPT_CLEAR       						0x0086
     #define SYSTEM__MODE_START                 					0x0087
+
     #define VL53L1_RESULT__RANGE_STATUS							0x0089
     #define VL53L1_RESULT__DSS_ACTUAL_EFFECTIVE_SPADS_SD0		0x008C
     #define RESULT__AMBIENT_COUNT_RATE_MCPS_SD					0x0090
