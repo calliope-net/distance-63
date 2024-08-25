@@ -1,5 +1,28 @@
 
-namespace vl53l4cd { // VL53L4CD.ts
+namespace vl53l4cd
+/*
+SparkFun Distance Sensor - 1.3 Meter, VL53L4CD (Qwiic)
+https://www.sparkfun.com/products/18993
+https://cdn.sparkfun.com/r/455-455/assets/parts/1/8/5/7/2/18993-SparkFun_Distance_Sensor_-_1.3_Meter__VL53L4CD__Qwiic_-01.jpg
+
+Qwiic Distance Sensor (VL53L1X, VL53L4CD) Hookup Guide
+https://learn.sparkfun.com/tutorials/qwiic-distance-sensor-vl53l1x-vl53l4cd-hookup-guide
+
+
+https://github.com/sparkfun/Qwiic_VL53L1X_Py
+https://github.com/sparkfun/Qwiic_VL53L1X_Py/blob/master/README.md
+https://github.com/sparkfun/Qwiic_VL53L1X_Py/blob/master/examples/Example1_ReadDistance.py
+
+
+https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library
+https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/src/SparkFun_VL53L1X.h
+https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/src/SparkFun_VL53L1X.cpp
+https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/src/st_src/vl53l1x_class.h
+https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/src/st_src/vl53l1x_class.cpp
+https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/examples/Example1_ReadDistance/Example1_ReadDistance.ino
+
+
+*/ { // VL53L4CD.ts
 
     const i2cQwiicDistanceSensor_x29 = 0x29 // default address 0x52 >> 1
 
@@ -25,10 +48,35 @@ namespace vl53l4cd { // VL53L4CD.ts
         return rdWord(eRegister.VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0)
     }
 
+    //% group="Threshold"
+    //% block="SetDistanceThreshold Low %threshLow High %threshHigh Window %window IntOnNoTarget %intOnNoTarget" weight=8
+    //% inlineInputMode=inline 
+    export function setDistanceThreshold(threshLow: number, threshHigh: number, window: number, intOnNoTarget: number) {
+        let Temp = rdByte(eRegister.SYSTEM__INTERRUPT_CONFIG_GPIO)
+        Temp = Temp & 0x47
+        if (intOnNoTarget == 0) {
+            wrByte(eRegister.SYSTEM__INTERRUPT_CONFIG_GPIO, (Temp | (window & 0x07)))
+        }
+        else {
+            wrByte(eRegister.SYSTEM__INTERRUPT_CONFIG_GPIO, ((Temp | (window & 0x07)) | 0x40))
+        }
+        wrWord(eRegister.SYSTEM__THRESH_HIGH, threshHigh)
+        wrWord(eRegister.SYSTEM__THRESH_LOW, threshLow)
+    }
+
+    //% group="Threshold"
+    //% block="GetDistanceThresholdWindow" weight=8
+    export function getDistanceThresholdWindow() {
+        let tmp = rdByte(eRegister.SYSTEM__INTERRUPT_CONFIG_GPIO)
+        return (tmp & 0x7)
+    }
 
 
 
-    //% group="Sensor"
+    // ========== group="VL53L1X"
+    // https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/src/st_src/vl53l1x_class.cpp
+
+    //% group="VL53L1X"
     //% block="Sensor Init"
     export function sensorInit() {
         //for (let index = 0x2D; index <= 0x87; index++) {
@@ -37,49 +85,34 @@ namespace vl53l4cd { // VL53L4CD.ts
         let buffer = Buffer.create(2)
         buffer.setNumber(NumberFormat.UInt16BE, 0, 0x2D)
         i2cWriteBuffer(Buffer.concat([buffer, VL51L1X_DEFAULT_CONFIGURATION]))
+
+        startRanging()
+
+        //We need to wait at least the default intermeasurement period of 103ms before dataready will occur
+        //But if a unit has already been powered and polling, it may happen much faster
+
+        let dataReady = 0, timeout = 0
+
+        while (dataReady == 0) {
+            dataReady = checkForDataReady() //  status = VL53L1X_CheckForDataReady(& dataReady);
+            if (timeout++ > 150)
+                return 1  // VL53L1_ERROR_TIME_OUT;
+            delay(1);
+        }
+        clearInterrupt();
+        stopRanging();
+        wrByte(eRegister.VL53L1_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, 0x09); // two bounds VHV
+        wrByte(0x0B, 0)	// start VHV from the previous temperature
+        return 0 //status;
     }
 
-    //% group="Sensor"
-    //% block="StartRanging (ClearInterrupt + Start 0x40)"
-    export function startRanging() {
-        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01) // clear interrupt trigger
-        wrByte(eRegister.SYSTEM__MODE_START, 0x40) // Enable VL53L1X
-    }
-
-
-    //% group="Sensor"
+    //% group="VL53L1X"
     //% block="ClearInterrupt"
     export function clearInterrupt() {
         wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
     }
 
-    //% group="Sensor"
-    //% block="StartOneshotRanging (ClearInterrupt + Start 0x10)"
-    export function startOneshotRanging() {
-        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
-        wrByte(eRegister.SYSTEM__MODE_START, 0x10) // Enable VL53L1X one-shot ranging
-    }
-
-    //% group="Sensor"
-    //% block="StopRanging"
-    export function stopRanging() {
-        wrByte(eRegister.SYSTEM__MODE_START, 0x00) // Enable VL53L1X
-    }
-
-    //% group="Sensor"
-    //% block="CheckForDataReady (0 ist ready)"
-    export function checkForDataReady() {
-        let IntPol = getInterruptPolarity()
-        let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS)
-        // Read in the register to check if a new value is available
-
-        if ((Temp & 1) == IntPol)
-            return 1 // isDataReady
-        else
-            return 0
-    }
-
-    //% group="Sensor"
+    //% group="VL53L1X"
     //% block="SetInterruptPolarity %newPolarity"
     export function setInterruptPolarity(newPolarity: number) {
         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
@@ -87,13 +120,47 @@ namespace vl53l4cd { // VL53L4CD.ts
         wrByte(eRegister.GPIO_HV_MUX__CTRL, temp | (~(newPolarity & 1)) << 4)
     }
 
-    //% group="Sensor"
+    //% group="VL53L1X"
     //% block="GetInterruptPolarity (0 oder -1)"
     export function getInterruptPolarity() {
         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
         temp = temp & 0x10
         return ~(temp >> 4)
     }
+
+    //% group="VL53L1X"
+    //% block="StartRanging (ClearInterrupt + Start 0x40)"
+    export function startRanging() {
+        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01) // clear interrupt trigger
+        wrByte(eRegister.SYSTEM__MODE_START, 0x40) // Enable VL53L1X
+    }
+
+    //% group="VL53L1X"
+    //% block="StartOneshotRanging (ClearInterrupt + Start 0x10)"
+    export function startOneshotRanging() {
+        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
+        wrByte(eRegister.SYSTEM__MODE_START, 0x10) // Enable VL53L1X one-shot ranging
+    }
+
+    //% group="VL53L1X"
+    //% block="StopRanging"
+    export function stopRanging() {
+        wrByte(eRegister.SYSTEM__MODE_START, 0x00) // Enable VL53L1X
+    }
+
+    //% group="VL53L1X"
+    //% block="CheckForDataReady (0 ist ready)"
+    export function checkForDataReady() {
+        let IntPol = getInterruptPolarity()
+        let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS)
+        // Read in the register to check if a new value is available
+
+        if ((Temp & 1) == IntPol)
+            return 1
+        else
+            return 0 // isDataReady
+    }
+
 
 
 
@@ -118,6 +185,16 @@ namespace vl53l4cd { // VL53L4CD.ts
     }
 
     //% group="I²C"
+    //% block="write Word %register UInt16 %data" weight=6
+    export function wrWord(register: eRegister, data: number) {
+        let buffer = Buffer.create(4)
+        buffer.setNumber(NumberFormat.UInt16BE, 0, register)
+        buffer.setNumber(NumberFormat.UInt16BE, 2, data)
+        i2cWriteBuffer(buffer)
+    }
+
+
+    //% group="I²C"
     //% block="read Word (UInt16BE) %register" weight=8
     export function rdWord(register: eRegister) {
         let buffer = Buffer.create(2)
@@ -139,10 +216,16 @@ namespace vl53l4cd { // VL53L4CD.ts
     }
 
     export enum eRegister {
+        VL53L1_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND = 0x0008,
+        // 0x2D
         GPIO_HV_MUX__CTRL = 0x0030,
         GPIO__TIO_HV_STATUS = 0x0031,
+        SYSTEM__INTERRUPT_CONFIG_GPIO = 0x0046,
+        SYSTEM__THRESH_HIGH = 0x0072,
+        SYSTEM__THRESH_LOW = 0x0074,
         SYSTEM__INTERRUPT_CLEAR = 0x0086,
         SYSTEM__MODE_START = 0x0087,
+        // 0x87
         VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 = 0x0096,
         VL53L1_IDENTIFICATION__MODEL_ID = 0x010F
     }
@@ -198,6 +281,7 @@ namespace vl53l4cd { // VL53L4CD.ts
     */
 
 
+    // https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/src/st_src/vl53l1x_class.cpp
     let VL51L1X_DEFAULT_CONFIGURATION = Buffer.fromArray([
         0x00, /* 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else don't touch */
         0x01, /* 0x2e : bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) */
