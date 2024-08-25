@@ -18,6 +18,71 @@ namespace vl53l4cd { // VL53L4CD.ts
         return rdWord(eRegister.VL53L1_IDENTIFICATION__MODEL_ID)
     }
 
+    //% group="Sensor"
+    //% block="Sensor Init" weight=7
+    export function sensorInit() {
+        for (let index = 0x2D; index <= 0x87; index++) {
+            wrByte(index, VL51L1X_DEFAULT_CONFIGURATION[index - 0x2D]);
+        }
+    }
+
+    //% group="Sensor"
+    //% block="StartRanging"
+    export function startRanging() {
+        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01) // clear interrupt trigger
+        wrByte(eRegister.SYSTEM__MODE_START, 0x40) // Enable VL53L1X
+    }
+
+
+    //% group="Sensor"
+    //% block="ClearInterrupt"
+    export function clearInterrupt() {
+        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
+    }
+
+    //% group="Sensor"
+    //% block="StartOneshotRanging"
+    export function startOneshotRanging() {
+        wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
+        wrByte(eRegister.SYSTEM__MODE_START, 0x10) // Enable VL53L1X one-shot ranging
+    }
+
+    //% group="Sensor"
+    //% block="StopRanging"
+    export function stopRanging() {
+        wrByte(eRegister.SYSTEM__MODE_START, 0x00) // Enable VL53L1X
+    }
+
+    //% group="Sensor"
+    //% block="CheckForDataReady"
+    export function checkForDataReady() {
+        let IntPol = getInterruptPolarity()
+        let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS)
+        // Read in the register to check if a new value is available
+
+        if ((Temp & 1) == IntPol)
+            return 1 // isDataReady
+        else
+            return 0
+    }
+
+    //% group="Sensor"
+    //% block="SetInterruptPolarity %newPolarity"
+    export function setInterruptPolarity(newPolarity: number) {
+        let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
+        temp = temp & 0xEF
+        wrByte(eRegister.GPIO_HV_MUX__CTRL, temp | (~(newPolarity & 1)) << 4)
+    }
+
+    //% group="Sensor"
+    //% block="GetInterruptPolarity"
+    export function getInterruptPolarity() {
+        let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
+        temp = temp & 0x10
+        return ~(temp >> 4)
+    }
+
+
 
 
     //% group="I²C"
@@ -27,6 +92,15 @@ namespace vl53l4cd { // VL53L4CD.ts
         buffer.setNumber(NumberFormat.UInt16BE, 0, register)
         buffer.setUint8(2, byte)
         i2cWriteBuffer(buffer)
+    }
+
+    //% group="I²C"
+    //% block="read Byte %register" weight=6
+    export function rdByte(register: eRegister) {
+        let buffer = Buffer.create(2)
+        buffer.setNumber(NumberFormat.UInt16BE, 0, register)
+        i2cWriteBuffer(buffer)
+        return i2cReadBuffer(1).getUint8(0)
     }
 
     //% group="I²C"
@@ -51,6 +125,8 @@ namespace vl53l4cd { // VL53L4CD.ts
     }
 
     export enum eRegister {
+        GPIO_HV_MUX__CTRL = 0x0030,
+        GPIO__TIO_HV_STATUS = 0x0031,
         SYSTEM__INTERRUPT_CLEAR = 0x0086,
         SYSTEM__MODE_START = 0x0087,
         VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0 = 0x0096,
