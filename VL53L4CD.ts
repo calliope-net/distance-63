@@ -29,6 +29,34 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     let n_QwiicDistanceSensorConnected: boolean
 
 
+    //% group="Laser Distance Sensor"
+    //% block="Abstand (cm) mit Pause 5ms" weight=9
+    export function readAbstand5() {
+        startRanging()
+        basic.pause(5)
+        let distance = getDistance()
+        basic.pause(5)
+        stopRanging()
+
+        return distance / 10
+    }
+
+    //% group="Laser Distance Sensor"
+    //% block="Abstand (cm) mit checkForDataReady" weight=8
+    export function readAbstandR() {
+        startRanging()
+        while (checkForDataReady() == 0) {
+            delay(1) // ms
+        }
+        let distance = getDistance() //Get the result of the measurement from the sensor
+        clearInterrupt()
+        stopRanging()
+
+        return distance / 10
+    }
+
+
+
     //% group="Sensor"
     //% block="Sensor Connected" weight=9
     export function sensorConnected() {
@@ -125,7 +153,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
      } */
 
     //% group="VL53L1X"
-    //% block="GetInterruptPolarity (0 oder -1)"
+    //% block="GetInterruptPolarity (0 oder 1 active high=default)"
     export function getInterruptPolarity() {
         // This function returns the current interrupt polarity
         // * 1 = active high (**default**) * 0 = active low
@@ -166,7 +194,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
         // This function checks if the new ranging data is available by polling the dedicated register.
         // return isDataReady:	* 0 -> not ready * 1 -> ready
         let IntPol = getInterruptPolarity()
-        let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS)
+        let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS) // 0x03
         // Read in the register to check if a new value is available
 
         if ((Temp & 1) == IntPol)

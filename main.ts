@@ -1,6 +1,15 @@
 input.onButtonEvent(Button.A, input.buttonEventClick(), function () {
     if (vl53l4cd.sensorInit() == 0) {
-        while (true) {
+        while (!(input.buttonIsPressed(Button.B))) {
+            o4digit.show(vl53l4cd.readAbstandR())
+        }
+    } else {
+        basic.setLedColors(0xff0000, 0x000000, 0x000000)
+    }
+})
+input.onButtonEvent(Button.AB, input.buttonEventClick(), function () {
+    if (vl53l4cd.sensorInit() == 0) {
+        while (!(input.buttonIsPressed(Button.B))) {
             vl53l4cd.startRanging()
             basic.pause(5)
             distance = vl53l4cd.getDistance()
@@ -11,6 +20,11 @@ input.onButtonEvent(Button.A, input.buttonEventClick(), function () {
     } else {
         basic.setLedColors(0xff0000, 0x000000, 0x000000)
     }
+})
+input.onButtonEvent(Button.B, input.buttonEventClick(), function () {
+    o4digit.clear()
+    o4digit.bit(vl53l4cd.getInterruptPolarity(), 3)
+    o4digit.bit(vl53l4cd.rdByte(vl53l4cd.eRegister.GPIO__TIO_HV_STATUS), 1)
 })
 let distance = 0
 let o4digit: grove.TM1637 = null
