@@ -79,12 +79,14 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     //% group="VL53L1X"
     //% block="Sensor Init"
     export function sensorInit() {
-        //for (let index = 0x2D; index <= 0x87; index++) {
-        //    wrByte(index, VL51L1X_DEFAULT_CONFIGURATION[index - 0x2D]);
-        //}
-        let buffer = Buffer.create(2)
-        buffer.setNumber(NumberFormat.UInt16BE, 0, 0x2D)
-        i2cWriteBuffer(Buffer.concat([buffer, VL51L1X_DEFAULT_CONFIGURATION]))
+        // This function loads the 135 bytes default values to initialize the sensor.
+        // :return:	* 0:success * != 0:failed
+        for (let index = 0x2D; index <= 0x87; index++) {
+            wrByte(index, VL51L1X_DEFAULT_CONFIGURATION[index - 0x2D]);
+        }
+        // let buffer = Buffer.create(2)
+        // buffer.setNumber(NumberFormat.UInt16BE, 0, 0x2D)
+        // i2cWriteBuffer(Buffer.concat([buffer, VL51L1X_DEFAULT_CONFIGURATION]))
 
         startRanging()
 
@@ -96,7 +98,7 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
         while (dataReady == 0) {
             dataReady = checkForDataReady() //  status = VL53L1X_CheckForDataReady(& dataReady);
             if (timeout++ > 150)
-                return 1  // VL53L1_ERROR_TIME_OUT;
+                return VL53L1_ERROR_TIME_OUT
             delay(1);
         }
         clearInterrupt();
@@ -106,6 +108,8 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
         return 0 //status;
     }
 
+    const VL53L1_ERROR_TIME_OUT = -7
+
     //% group="VL53L1X"
     //% block="ClearInterrupt"
     export function clearInterrupt() {
@@ -114,18 +118,26 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
 
     //% group="VL53L1X"
     //% block="SetInterruptPolarity %newPolarity"
-    export function setInterruptPolarity(newPolarity: number) {
-        let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
-        temp = temp & 0xEF // 0b11101111
-        wrByte(eRegister.GPIO_HV_MUX__CTRL, temp | (~(newPolarity & 1)) << 4)
-    }
+    /*  export function setInterruptPolarity(newPolarity: number) {
+         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
+         temp = temp & 0xEF // 0b11101111
+         wrByte(eRegister.GPIO_HV_MUX__CTRL, temp | (~(newPolarity & 1)) << 4)
+     } */
 
     //% group="VL53L1X"
     //% block="GetInterruptPolarity (0 oder -1)"
     export function getInterruptPolarity() {
+        // This function returns the current interrupt polarity
+        // * 1 = active high (**default**) * 0 = active low
         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
-        temp = temp & 0x10
-        return ~(temp >> 4)
+        // temp = temp & 0x10
+        // return ~(temp >> 4)
+
+        // set bit 4 to 0 for active high interrupt and 1 for active low (bits 3:0 must be 0x1), use SetInterruptPolarity()
+        if ((temp & 0x10) == 0x10) // bit 4 == 1
+            return 0 // * 0 = active low
+        else
+            return 1 // bit 4 to 0 * 1 = active high (**default**)
     }
 
     //% group="VL53L1X"
@@ -151,14 +163,16 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     //% group="VL53L1X"
     //% block="CheckForDataReady (0 ist ready)"
     export function checkForDataReady() {
+        // This function checks if the new ranging data is available by polling the dedicated register.
+        // return isDataReady:	* 0 -> not ready * 1 -> ready
         let IntPol = getInterruptPolarity()
         let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS)
         // Read in the register to check if a new value is available
 
         if ((Temp & 1) == IntPol)
-            return 1
+            return 1 // 1 -> ready
         else
-            return 0 // isDataReady
+            return 0 // 0 -> not ready
     }
 
 
