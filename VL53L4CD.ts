@@ -21,7 +21,7 @@ namespace vl53l4cd { // VL53L4CD.ts
 
     //% group="Sensor"
     //% block="GetDistance (mm)" weight=8
-    export function getDistance() { 
+    export function getDistance() {
         return rdWord(eRegister.VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0)
     }
 
@@ -31,9 +31,12 @@ namespace vl53l4cd { // VL53L4CD.ts
     //% group="Sensor"
     //% block="Sensor Init"
     export function sensorInit() {
-        for (let index = 0x2D; index <= 0x87; index++) {
-            wrByte(index, VL51L1X_DEFAULT_CONFIGURATION[index - 0x2D]);
-        }
+        //for (let index = 0x2D; index <= 0x87; index++) {
+        //    wrByte(index, VL51L1X_DEFAULT_CONFIGURATION[index - 0x2D]);
+        //}
+        let buffer = Buffer.create(2)
+        buffer.setNumber(NumberFormat.UInt16BE, 0, 0x2D)
+        i2cWriteBuffer(Buffer.concat([buffer, VL51L1X_DEFAULT_CONFIGURATION]))
     }
 
     //% group="Sensor"
