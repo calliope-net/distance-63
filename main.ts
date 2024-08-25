@@ -12,10 +12,21 @@ function WrByte (register: number, byte: number) {
 }
 input.onButtonEvent(Button.A, input.buttonEventClick(), function () {
     basic.showNumber(vl53l4cd.rdWord(vl53l4cd.eRegister.VL53L1_IDENTIFICATION__MODEL_ID))
+    vl53l4cd.sensorInit()
+})
+input.onButtonEvent(Button.AB, input.buttonEventClick(), function () {
+    basic.showNumber(vl53l4cd.getInterruptPolarity())
 })
 input.onButtonEvent(Button.B, input.buttonEventClick(), function () {
-    WrByte(134, 1)
-    WrByte(135, 64)
+    vl53l4cd.startRanging()
+    basic.setLedColors(0x0000ff, 0xff0000, 0xff0000)
+    while (vl53l4cd.checkForDataReady() != 0) {
+        vl53l4cd.delay(1)
+    }
+    basic.setLedColors(0x0000ff, 0x00ff00, 0xff0000)
+    basic.showNumber(vl53l4cd.getDistance())
+    vl53l4cd.clearInterrupt()
+    vl53l4cd.stopRanging()
 })
 function RdWord (register: number) {
     bw = pins.buffer_create(2)

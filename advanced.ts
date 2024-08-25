@@ -15,4 +15,11 @@ namespace vl53l4cd { // advanced.ts
         return Buffer.fromHex(hex).getNumber(format, 0)
     }
 
+    //% group="Funktionen" advanced=true
+    //% block="delay (ms) %ms"
+    export function delay(ms: number) {
+        basic.pause(ms)
+    }
+
+
 } // advanced.ts

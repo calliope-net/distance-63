@@ -18,8 +18,18 @@ namespace vl53l4cd { // VL53L4CD.ts
         return rdWord(eRegister.VL53L1_IDENTIFICATION__MODEL_ID)
     }
 
+
     //% group="Sensor"
-    //% block="Sensor Init" weight=7
+    //% block="GetDistance (mm)" weight=8
+    export function getDistance() { 
+        return rdWord(eRegister.VL53L1_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0)
+    }
+
+
+
+
+    //% group="Sensor"
+    //% block="Sensor Init"
     export function sensorInit() {
         for (let index = 0x2D; index <= 0x87; index++) {
             wrByte(index, VL51L1X_DEFAULT_CONFIGURATION[index - 0x2D]);
@@ -27,7 +37,7 @@ namespace vl53l4cd { // VL53L4CD.ts
     }
 
     //% group="Sensor"
-    //% block="StartRanging"
+    //% block="StartRanging (ClearInterrupt + Start 0x40)"
     export function startRanging() {
         wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01) // clear interrupt trigger
         wrByte(eRegister.SYSTEM__MODE_START, 0x40) // Enable VL53L1X
@@ -41,7 +51,7 @@ namespace vl53l4cd { // VL53L4CD.ts
     }
 
     //% group="Sensor"
-    //% block="StartOneshotRanging"
+    //% block="StartOneshotRanging (ClearInterrupt + Start 0x10)"
     export function startOneshotRanging() {
         wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
         wrByte(eRegister.SYSTEM__MODE_START, 0x10) // Enable VL53L1X one-shot ranging
@@ -54,7 +64,7 @@ namespace vl53l4cd { // VL53L4CD.ts
     }
 
     //% group="Sensor"
-    //% block="CheckForDataReady"
+    //% block="CheckForDataReady (0 ist ready)"
     export function checkForDataReady() {
         let IntPol = getInterruptPolarity()
         let Temp = rdByte(eRegister.GPIO__TIO_HV_STATUS)
@@ -70,17 +80,18 @@ namespace vl53l4cd { // VL53L4CD.ts
     //% block="SetInterruptPolarity %newPolarity"
     export function setInterruptPolarity(newPolarity: number) {
         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
-        temp = temp & 0xEF
+        temp = temp & 0xEF // 0b11101111
         wrByte(eRegister.GPIO_HV_MUX__CTRL, temp | (~(newPolarity & 1)) << 4)
     }
 
     //% group="Sensor"
-    //% block="GetInterruptPolarity"
+    //% block="GetInterruptPolarity (0 oder -1)"
     export function getInterruptPolarity() {
         let temp = rdByte(eRegister.GPIO_HV_MUX__CTRL)
         temp = temp & 0x10
         return ~(temp >> 4)
     }
+
 
 
 
