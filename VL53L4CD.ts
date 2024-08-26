@@ -175,7 +175,20 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
             return 1 // bit 4 to 0 * 1 = active high (**default**)
     } */
 
+    export enum eSYSTEM__MODE_START {
+        startOneshotRanging = 0x10, // Enable VL53L1X one-shot ranging
+        startRanging = 0x40, // Enable VL53L1X
+        stopRanging = 0x00
+    }
 
+    //% group="Laser Sensor"
+    //% block="Ranging Mode %mode || ClearInterrupt %clearInterrupt" weight=5
+    //% clearInterrupt.shadow=toggleYesNo
+    export function ranging(mode: eSYSTEM__MODE_START, clearInterrupt = false) {
+        if (clearInterrupt)
+            wrByte(eRegister.SYSTEM__INTERRUPT_CLEAR, 0x01)
+        wrByte(eRegister.SYSTEM__MODE_START, mode)
+    }
 
     //% group="VL53L1X"
     //% block="StartRanging (ClearInterrupt + Start 0x40)" weight=5

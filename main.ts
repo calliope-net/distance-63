@@ -9,12 +9,10 @@ input.onButtonEvent(Button.A, input.buttonEventClick(), function () {
 })
 input.onButtonEvent(Button.AB, input.buttonEventClick(), function () {
     if (vl53l4cd.sensorInit() == 0) {
-        while (!(input.buttonIsPressed(Button.B))) {
-            vl53l4cd.startRanging()
+        while (true) {
             basic.pause(5)
             distance = vl53l4cd.getDistance()
             basic.pause(5)
-            vl53l4cd.stopRanging()
             o4digit.show(distance)
         }
     } else {
@@ -22,10 +20,16 @@ input.onButtonEvent(Button.AB, input.buttonEventClick(), function () {
     }
 })
 input.onButtonEvent(Button.B, input.buttonEventClick(), function () {
-    o4digit.clear()
-    o4digit.bit(0, 3)
-    o4digit.bit(vl53l4cd.rdByte(vl53l4cd.eRegister.GPIO__TIO_HV_STATUS), 1)
+    b = !(b)
+    if (b) {
+        vl53l4cd.ranging(vl53l4cd.eSYSTEM__MODE_START.startRanging)
+        basic.setLedColors(0x000000, 0x000000, 0x00ff00)
+    } else {
+        vl53l4cd.ranging(vl53l4cd.eSYSTEM__MODE_START.stopRanging)
+        basic.setLedColors(0x000000, 0x000000, 0xff0000)
+    }
 })
+let b = false
 let distance = 0
 let o4digit: grove.TM1637 = null
 let i2cAdresse = pins.pins_i2cAdressen(pins.ei2cAdressen.LaserDistance_x29)
