@@ -44,13 +44,13 @@ https://github.com/sparkfun/SparkFun_VL53L1X_Arduino_Library/blob/master/example
     //% group="Laser Distance Sensor"
     //% block="Abstand (cm) mit checkForDataReady" weight=8
     export function readAbstandR() {
-        startRanging()
+       // startRanging()
         while (!checkForDataReady()) {// (checkForDataReady() == 0) {
             delay(1) // ms
         }
         let distance = getDistance() //Get the result of the measurement from the sensor
-        clearInterrupt()
-        stopRanging()
+      //  clearInterrupt()
+       // stopRanging()
 
         return distance / 10
     }

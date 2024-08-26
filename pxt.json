@@ -5,7 +5,8 @@
         "core": "*",
         "v3": "*",
         "pins": "github:calliope-net/pins#v1.0.0",
-        "Grove": "github:calliope-edu/pxt-grove#v0.9.2"
+        "Grove": "github:calliope-edu/pxt-grove#v0.9.2",
+        "bit": "github:calliope-net/bit#v1.3.4"
     },
     "files": [
         "main.blocks",
